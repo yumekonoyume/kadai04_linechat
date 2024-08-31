@@ -8,7 +8,7 @@ LINE風チャットアプリ
 
 ## ③DEMO
 
-デプロイしている場合はURLを記入（任意）
+https://yumekonoyume.github.io/kadai04_linechat/
 
 ## ④作ったアプリケーション用のIDまたはPasswordがある場合
 
