@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <title>event report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+    <section class="flex-center">
+        <div class="header">
+            2024/08/10 キャンプ @ 〇〇
+        </div>
+        <!-- Slider main container -->
+        <div class="swiper">
+            <!-- Additional required wrapper -->
+            <div class="swiper-wrapper">
+                <!-- Slides -->
+                <div class="swiper-slide">
+                    <img src="img/anastasiia-tarasova-PLBcLq3GQZA-unsplash.jpg" alt="">
+                </div>
+                <div class="swiper-slide">
+                    <img src="img/andrik-langfield-iPNilBHvNvg-unsplash.jpg" alt="">
+                </div>
+                <div class="swiper-slide">
+                    <img src="img/matthieu-joannon-fnyHxuk0OvY-unsplash.jpg" alt="">
+                </div>
+                <div class="swiper-slide">
+                    <img src="img/pavan-trikutam-lPufCHtdCLI-unsplash.jpg" alt="">
+                </div>
+                <div class="swiper-slide">
+                    <img src="img/tirza-van-dijk-hbwdmqcmP6k-unsplash.jpg" alt="">
+                </div>
+                <div class="swiper-slide">
+                    <img src="img/premium_photo-1661896173489-952d956cd12e.avif" alt="">
+                </div>
+                <div class="swiper-slide">
+                    <img src="img/picnic-6957303_1280.jpg" alt="">
+                </div>
+            </div>
+
+            <!-- If we need pagination -->
+            <div class="swiper-pagination"></div>
+
+            <!-- If we need navigation buttons -->
+            <div class="swiper-button-prev"></div>
+            <div class="swiper-button-next"></div>
+
+            <!-- If we need scrollbar -->
+            <div class="swiper-scrollbar"></div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+        <script>
+            const swiper = new Swiper('.swiper', {
+                // Optional parameters
+                direction: 'horizontal',
+                loop: true,
+                speed: 500,
+                effect: "fade",
+
+
+                // If we need pagination
+                pagination: {
+                    el: '.swiper-pagination',
+                },
+
+                // Navigation arrows
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+
+                // And if we need scrollbar
+                scrollbar: {
+                    el: '.swiper-scrollbar',
+                },
+            });
+        </script>
+
+        <!-- コンテンツ表示画面 -->
+
+        <div class="container">
+            <div> 名前：<input type="text" id="uname"> </div>
+            <div>感想・コメント：
+                <textarea id="text" cols="30" rows="10"></textarea>
+                <button id="send">送信</button>
+            </div>
+            <div id="output" style="overflow: auto; height: 300px;"></div>
+        </div>
+            <!--/ コンテンツ表示画面 -->
+    </section>
+    <!-- JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- JQuery -->
+
+    <!--** 以下Firebase **-->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded, update, remove, onChildRemoved, onChildChanged }
+            from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+    apiKey: "*********************************",
+    authDomain: "****[ Your Firebase KEY ]****",
+    databaseURL: "****************************",
+    projectId: "**********",
+    storageBucket: "**************************",
+    messagingSenderId: "**********************",
+    appId: "**********************************",
+};
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);  //Firebaseにアクセス
+        const db = getDatabase(app);                //リアルタイムデータベースに接続
+        const dbRef = ref(db, "chat");              //データを入れる場所を指定
+
+        //送信
+        $("#send").on("click", function () {
+            const now = new Date();
+            const msg = {
+                uname: $("#uname").val(),
+                text: $("#text").val(),
+                timestamp: now.toLocaleString() // 現在の日時を取得して保存
+            }
+            const newPostRef = push(dbRef);
+            set(newPostRef, msg);
+        });
+
+        // 受信　最初にデータ取得
+        onChildAdded(dbRef, (data) => {
+            const msg = data.val();
+            const key = data.key; //ユニークkey 削除・更新に必須！
+
+            let h = '<p id="' + key + '">';
+            h += msg.uname + '<br>';
+            h += '<span contentEditable="true" id="' + key + '_update">' + msg.text + '</span><br>';
+            h += '<em>(' + msg.timestamp + ')</em><br>';
+            h += '<button class="remove" data-key="' + key + '">削除</button> ';
+            h += '<button class="update" data-key="' + key + '">更新</button>';
+            h += '</p>';
+            $("#output").prepend(h);
+            $("#uname").val('');
+            $("#text").val('');
+        });
+
+        // 削除
+        $(document).on('click', '.remove', function () {
+            const key = $(this).data('key');
+            const deleteRef = ref(db, 'chat/' + key);
+            remove(deleteRef);
+            $('#' + key).remove();
+        });
+
+        // 更新
+        $(document).on('click', '.update', function () {
+            const key = $(this).data('key');
+            const updatedText = $('#' + key + '_update').text();
+            const updateRef = ref(db, 'chat/' + key);
+            update(updateRef, { text: updatedText })
+                .then(() => {
+                    alert("メッセージが更新されました。");
+                })
+                .catch((error) => {
+                    console.error("更新エラー:", error);
+                });
+        });
+
+        //削除処理がFirebase側で実行されたらイベント発生！
+        onChildRemoved(dbRef, (data) => {
+            $("#" + data.key).remove(); //DOM操作関数（対象を削除）
+        });
+
+        //更新処理がFirebase側で実行されたらイベント発生！
+        onChildChanged(dbRef, (data) => {
+            $("#" + data.key + '_update').text(data.val().text);
+            $("#" + data.key + '_update').fadeOut(800).fadeIn(800);
+        });
+
+    </script>
+
+</body>
+
+</html>
